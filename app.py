@@ -1,18 +1,21 @@
-# test_sheets.py
+import streamlit as st
 import gspread
-from google.oauth2.service_account import Credentials
+from oauth2client.service_account import ServiceAccountCredentials
+import pandas as pd
 
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets",
-          "https://www.googleapis.com/auth/drive"]
+# --- Kết nối Google Sheet ---
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+client = gspread.authorize(creds)
 
-creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
-gc = gspread.authorize(creds)
+# Mở sheet
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1my6VbCaAlDjVm5ITvjSV94tVU8AfR8zrHuEtKhjCAhY"
+sheet = client.open_by_url(SHEET_URL).sheet1
 
-# Thay ID bằng ID sheet của bạn
-SHEET_ID = "1my6VbCaAlDjVm5ITvjSV94tVU8AfR8zrHuEtKhjCAhY"
-wb = gc.open_by_key(SHEET_ID)
-print("Worksheets:", [ws.title for ws in wb.worksheets()])
+# Đọc dữ liệu
+data = sheet.get_all_records()
+df = pd.DataFrame(data)
 
-# Đọc sheet 'Products' (ví dụ)
-ws = wb.worksheet("Products")
-print(ws.get_all_records()[:3])
+# Hiển thị trên Streamlit
+st.title("📊 Demo Google Sheet với Streamlit")
+st.dataframe(df)
