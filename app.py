@@ -17,14 +17,14 @@ client = gspread.authorize(creds)
 # =======================
 # ĐỌC GOOGLE SHEET
 # =======================
-SHEET_ID = "1my6VbCaAlDjVm5ITvjSV94tVU8AfR8zrHuEtKhjCAhY"   # 🔹 thay bằng ID thật
+SHEET_ID = "1my6VbCaAlDjVm5ITvjSV94tVU8AfR8zrHuEtKhjCAhY"   # thay bằng ID thật
 sheet = client.open_by_key(SHEET_ID).sheet1
 data = sheet.get_all_records()
 
 # =======================
 # HIỂN THỊ STREAMLIT
 # =======================
-st.title("📊 Quản lý dữ liệu theo Mã hàng")
+st.title("📊 Quản lý dữ liệu theo mã")
 
 if data:
     df = pd.DataFrame(data)
@@ -33,17 +33,14 @@ if data:
     if "Mã hàng" not in df.columns:
         st.error("❌ Không tìm thấy cột 'Mã hàng' trong Google Sheet")
     else:
-        # danh sách mã hàng
+        # lấy danh sách mã hàng duy nhất
         ma_hangs = df["Mã hàng"].unique()
 
-        # chọn mã từ dropdown
-        selected_ma = st.selectbox("🔎 Chọn Mã hàng:", ma_hangs)
+        for ma in ma_hangs:
+            st.subheader(f"📦 Mã hàng: {ma}")
+            sub_df = df[df["Mã hàng"] == ma]
 
-        # lọc dữ liệu theo mã được chọn
-        sub_df = df[df["Mã hàng"] == selected_ma]
-
-        # hiển thị bảng
-        st.subheader(f"📦 Mã hàng: {selected_ma}")
-        st.dataframe(sub_df, use_container_width=True)
+            st.dataframe(sub_df, use_container_width=True)
+            st.markdown("---")  # ngăn cách giữa các bảng
 else:
     st.warning("Google Sheet rỗng hoặc chưa có dữ liệu.")
