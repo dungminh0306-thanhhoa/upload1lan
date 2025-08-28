@@ -1,60 +1,82 @@
 import streamlit as st
-import gspread
 import pandas as pd
+import gspread
 from google.oauth2.service_account import Credentials
 
-st.set_page_config(page_title="Google Sheet App", layout="wide")
+st.set_page_config(page_title="Quản lý nguyên phụ liệu", layout="wide")
 
-# =======================
+# =========================
 # KẾT NỐI GOOGLE SHEET
-# =======================
-service_account_info = dict(st.secrets["gcp_service_account"])
+# =========================
 scope = ["https://spreadsheets.google.com/feeds",
          "https://www.googleapis.com/auth/drive"]
-creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
+creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
 client = gspread.authorize(creds)
 
-# =======================
-# ĐỌC GOOGLE SHEET
-# =======================
 SHEET_ID = "1my6VbCaAlDjVm5ITvjSV94tVU8AfR8zrHuEtKhjCAhY"   # thay bằng ID thật
 sheet = client.open_by_key(SHEET_ID).sheet1
+
+# =========================
+# ĐỌC DỮ LIỆU HIỆN TẠI
+# =========================
 data = sheet.get_all_records()
+df = pd.DataFrame(data)
 
-st.title("📊 Quản lý dữ liệu theo mã")
+st.title("📦 Quản lý nguyên phụ liệu theo mã hàng")
 
-if data:
-    df = pd.DataFrame(data)
-
-    # =======================
-    # FORM NHẬP LIỆU
-    # =======================
-    st.subheader("✍️ Nhập dữ liệu mới")
-    with st.form("input_form"):
-        ma_hang = st.text_input("Mã hàng")
-        ten_sp = st.text_input("Tên sản phẩm")
-        so_luong = st.number_input("Số lượng", min_value=0, step=1)
-        gia = st.number_input("Đơn giá", min_value=0, step=1000)
-        
-        submitted = st.form_submit_button("➕ Thêm dữ liệu")
-
-        if submitted:
-            new_row = [ma_hang, ten_sp, so_luong, gia]
-            sheet.append_row(new_row)
-            st.success(f"✅ Đã thêm: {new_row}")
-            st.rerun()  # reload lại trang để hiển thị dữ liệu mới
-
-    # =======================
-    # HIỂN THỊ BẢNG THEO MÃ
-    # =======================
-    if "Mã hàng" not in df.columns:
-        st.error("❌ Không tìm thấy cột 'Mã hàng' trong Google Sheet")
-    else:
-        ma_hangs = df["Mã hàng"].unique()
-        for ma in ma_hangs:
-            st.subheader(f"📦 Mã hàng: {ma}")
-            sub_df = df[df["Mã hàng"] == ma]
-            st.dataframe(sub_df, use_container_width=True)
-            st.markdown("---")
+if df.empty:
+    st.warning("Google Sheet đang rỗng, hãy thêm dữ liệu mới 👇")
 else:
-    st.warning("Google Sheet rỗng hoặc chưa có dữ liệu.")
+    # Hiển thị & chỉnh sửa từng mã hàng
+    for ma_hang in df["Mã hàng"].unique():
+        st.subheader(f"📌 Mã hàng: {ma_hang}")
+
+        df_mahang = df[df["Mã hàng"] == ma_hang]
+        edited_df = st.data_editor(df_mahang, num_rows="dynamic", key=f"edit_{ma_hang}")
+
+        if st.button(f"💾 Lưu thay đổi cho {ma_hang}", key=f"save_{ma_hang}"):
+            # Xóa dữ liệu cũ của mã hàng
+            df_all = df[df["Mã hàng"] != ma_hang]
+
+            # Gộp dữ liệu cũ + dữ liệu mới
+            new_df = pd.concat([df_all, edited_df], ignore_index=True)
+
+            # Clear & update lại Google Sheet
+            sheet.clear()
+            sheet.update([new_df.columns.values.tolist()] + new_df.values.tolist())
+            st.success(f"✅ Đã lưu thay đổi cho {ma_hang}")
+
+    st.markdown("---")
+
+# =========================
+# FORM THÊM DỮ LIỆU MỚI
+# =========================
+st.header("➕ Thêm mã hàng mới")
+
+with st.form("add_new"):
+    col1, col2 = st.columns(2)
+
+    with col1:
+        ma_hang_new = st.text_input("Mã hàng")
+        ten_nguyen_phu_lieu = st.text_input("Tên nguyên phụ liệu")
+    with col2:
+        so_luong = st.number_input("Số lượng", min_value=0, step=1)
+        ghi_chu = st.text_input("Ghi chú")
+
+    submitted = st.form_submit_button("Thêm vào Google Sheet")
+
+    if submitted:
+        if not ma_hang_new:
+            st.error("❌ Vui lòng nhập Mã hàng")
+        else:
+            # Chuẩn bị dòng mới
+            new_row = {
+                "Mã hàng": ma_hang_new,
+                "Tên nguyên phụ liệu": ten_nguyen_phu_lieu,
+                "Số lượng": so_luong,
+                "Ghi chú": ghi_chu
+            }
+
+            # Append vào sheet
+            sheet.append_row(list(new_row.values()))
+            st.success(f"✅ Đã thêm mã hàng {ma_hang_new} vào Google Sheet")
