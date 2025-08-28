@@ -22,7 +22,7 @@ client = gspread.authorize(creds)
 # =======================
 # ĐỌC GOOGLE SHEET
 # =======================
-SHEET_ID = "YOUR_SHEET_ID_HERE"   # 🔹 thay bằng ID thật của Google Sheet
+SHEET_ID = "1my6VbCaAlDjVm5ITvjSV94tVU8AfR8zrHuEtKhjCAhY"   # 🔹 thay bằng ID thật của Google Sheet
 sheet = client.open_by_key(SHEET_ID).sheet1
 
 data = sheet.get_all_records()
@@ -37,3 +37,4 @@ if data:
     st.write(data)
 else:
     st.warning("Google Sheet đang rỗng hoặc chưa có dữ liệu.")
+
