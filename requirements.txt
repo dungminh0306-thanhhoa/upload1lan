@@ -1,7 +1,4 @@
-pip install streamlit
-gspread o
-auth2client
-pandas
-
-
+streamlit
+gspread
+google-auth
 
