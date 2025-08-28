@@ -39,11 +39,10 @@ if data:
         submitted = st.form_submit_button("➕ Thêm dữ liệu")
 
         if submitted:
-            # Thêm vào cuối Google Sheet
             new_row = [ma_hang, ten_sp, so_luong, gia]
             sheet.append_row(new_row)
             st.success(f"✅ Đã thêm: {new_row}")
-            st.experimental_rerun()  # load lại trang để cập nhật bảng
+            st.rerun()  # reload lại trang để hiển thị dữ liệu mới
 
     # =======================
     # HIỂN THỊ BẢNG THEO MÃ
